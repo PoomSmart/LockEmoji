@@ -1,0 +1,7 @@
+.
+theos
+_
+.theos
+*.deb
+obj
+InspCWrapper.m

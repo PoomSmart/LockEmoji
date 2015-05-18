@@ -1,0 +1,9 @@
+Package: org.thebigboss.lockemoji
+Name: LockEmoji
+Depends: mobilesubstrate, firmware (>= 7.0)
+Version: 1.0
+Architecture: iphoneos-arm
+Description: Fix for keyboard resetting mode when current is emoji.
+Maintainer: PoomSmart
+Author: PoomSmart
+Section: Tweaks
