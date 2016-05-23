@@ -1,7 +1,5 @@
 #import "../PS.h"
 
-//#include "InspCWrapper.m"
-
 @interface UIKeyboardInputMode : NSObject
 @property(retain, nonatomic) NSString *primaryLanguage;
 @property(retain, nonatomic) NSString *identifier;
@@ -16,8 +14,6 @@
 + (UIKeyboardPreferencesController *)sharedPreferencesController;
 - (void)setValue:(id)value forKey:(NSInteger)key;
 @end
-
-extern NSString *UIKeyboardInputMode_emoji;
 
 %hook UIKeyboardInputModeController
 
@@ -34,8 +30,10 @@ extern "C" NSString *TIInputModeGetNormalizedIdentifier(UIKeyboardInputMode *);
 MSHook(NSString *, TIInputModeGetNormalizedIdentifier, UIKeyboardInputMode *inputMode)
 {
 	NSString *normalizedIdentifier = _TIInputModeGetNormalizedIdentifier(inputMode);
-	if ([normalizedIdentifier isEqualToString:@"emoji"] && notEmoji == 2) {
-		notEmoji = 0;
+	if ([normalizedIdentifier isEqualToString:@"emoji"] && notEmoji >= 2) {
+		NSLog(@"get Called %d", notEmoji);
+		if (notEmoji == 2)
+			notEmoji = 0;
 		return @"notemoji";
 	}
 	return normalizedIdentifier;
@@ -45,8 +43,10 @@ MSHook(NSString *, TIInputModeGetNormalizedIdentifier, UIKeyboardInputMode *inpu
 
 - (void)setDelegate:(id)delegate force:(BOOL)force
 {
-	notEmoji = 2;
+	%log;
+	notEmoji = 4;
 	%orig;
+	notEmoji = 0;
 }
 
 %end
@@ -57,8 +57,10 @@ MSHook(NSString *, TIInputModeGetNormalizedIdentifier, UIKeyboardInputMode *inpu
 
 - (void)setLanguageAwareInputModeLastUsed:(UIKeyboardInputMode *)inputMode
 {
-	notEmoji = 2;
+	%log;
+	notEmoji = 4;
 	%orig;
+	notEmoji = 0;
 }
 
 %end
@@ -67,9 +69,63 @@ MSHook(NSString *, TIInputModeGetNormalizedIdentifier, UIKeyboardInputMode *inpu
 
 - (void)setCurrentInputModeInPreference:(UIKeyboardInputMode *)inputMode
 {
+	%log;
 	NSString *identifier = inputMode.identifier;
 	if (identifier)
-		[[%c(UIKeyboardPreferencesController) sharedPreferencesController] setValue:identifier forKey:12];
+		[UIKeyboardPreferencesController.sharedPreferencesController setValue:identifier forKey:12];
+}
+
+%end
+
+%end
+
+%group iOS9
+
+%hook UIInputSwitcherView
+
+- (void)setInputMode:(NSString *)inputMode
+{
+	%log;
+	notEmoji = 4;
+	%orig;
+	notEmoji = 0;
+}
+
+%end
+
+%hook UIKeyboardInputModeController
+
+- (void)updateLastUsedInputMode:(UIKeyboardInputMode *)inputMode
+{
+	%log;
+	if ([inputMode.normalizedIdentifier isEqualToString:@"emoji"]) {
+		inputMode.normalizedIdentifier = @"notemoji";
+		%orig(inputMode);
+		inputMode.normalizedIdentifier = @"emoji";
+		return;
+	}
+	%orig;
+}
+
+%end
+
+%hook UIKeyboardLayoutStar
+
+- (BOOL)keyplaneContainsEmojiKey
+{
+	return notEmoji >= 2 ? NO : %orig;
+}
+
+%end
+
+%hook UIKeyboardImpl
+
+- (void)setInputModeToNextInPreferredListWithExecutionContext:(id)arg1
+{
+	%log;
+	notEmoji = 4;
+	%orig;
+	notEmoji = 0;
 }
 
 %end
@@ -82,5 +138,8 @@ MSHook(NSString *, TIInputModeGetNormalizedIdentifier, UIKeyboardInputMode *inpu
 	%init;
 	if (isiOS8Up) {
 		%init(iOS8);
+		if (isiOS9Up) {
+			%init(iOS9);
+		}
 	}
 }
