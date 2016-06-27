@@ -31,7 +31,6 @@ MSHook(NSString *, TIInputModeGetNormalizedIdentifier, UIKeyboardInputMode *inpu
 {
 	NSString *normalizedIdentifier = _TIInputModeGetNormalizedIdentifier(inputMode);
 	if ([normalizedIdentifier isEqualToString:@"emoji"] && notEmoji >= 2) {
-		NSLog(@"get Called %d", notEmoji);
 		if (notEmoji == 2)
 			notEmoji = 0;
 		return @"notemoji";
