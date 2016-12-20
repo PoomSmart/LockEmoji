@@ -1,20 +1,5 @@
 #import "../PS.h"
 
-@interface UIKeyboardInputMode : NSObject
-@property(retain, nonatomic) NSString *primaryLanguage;
-@property(retain, nonatomic) NSString *identifier;
-@property(retain, nonatomic) NSString *normalizedIdentifier;
-@end
-
-@interface UIKeyboardInputModeController : NSObject
-@property(retain, nonatomic) UIKeyboardInputMode *currentInputMode;
-@end
-
-@interface UIKeyboardPreferencesController : NSObject
-+ (UIKeyboardPreferencesController *)sharedPreferencesController;
-- (void)setValue:(id)value forKey:(NSInteger)key;
-@end
-
 %hook UIKeyboardInputModeController
 
 - (UIKeyboardInputMode *)currentPublicInputMode
