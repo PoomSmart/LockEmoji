@@ -1,10 +1,11 @@
 #import "../PS.h"
+#import <UIKit/UIKeyboardInputModeController.h>
+#import <UIKit/UIKeyboardPreferencesController.h>
 
 %hook UIKeyboardInputModeController
 
-- (UIKeyboardInputMode *)currentPublicInputMode
-{
-	return self.currentInputMode;
+- (UIKeyboardInputMode *)currentPublicInputMode {
+    return self.currentInputMode;
 }
 
 %end
@@ -12,25 +13,22 @@
 int notEmoji = 0;
 
 extern "C" NSString *TIInputModeGetNormalizedIdentifier(UIKeyboardInputMode *);
-MSHook(NSString *, TIInputModeGetNormalizedIdentifier, UIKeyboardInputMode *inputMode)
-{
-	NSString *normalizedIdentifier = _TIInputModeGetNormalizedIdentifier(inputMode);
-	if ([normalizedIdentifier isEqualToString:@"emoji"] && notEmoji >= 2) {
-		if (notEmoji == 2)
-			notEmoji = 0;
-		return @"notemoji";
-	}
-	return normalizedIdentifier;
+%hookf(NSString *, TIInputModeGetNormalizedIdentifier, UIKeyboardInputMode *inputMode) {
+    NSString *normalizedIdentifier = %orig(inputMode);
+    if ([normalizedIdentifier isEqualToString:@"emoji"] && notEmoji >= 2) {
+        if (notEmoji == 2)
+            notEmoji = 0;
+        return @"notemoji";
+    }
+    return normalizedIdentifier;
 }
 
 %hook UIKeyboardImpl
 
-- (void)setDelegate:(id)delegate force:(BOOL)force
-{
-	%log;
-	notEmoji = 4;
-	%orig;
-	notEmoji = 0;
+- (void)setDelegate: (id)delegate force: (BOOL)force {
+    notEmoji = 4;
+    %orig;
+    notEmoji = 0;
 }
 
 %end
@@ -39,24 +37,20 @@ MSHook(NSString *, TIInputModeGetNormalizedIdentifier, UIKeyboardInputMode *inpu
 
 %hook UIKeyboardPreferencesController
 
-- (void)setLanguageAwareInputModeLastUsed:(UIKeyboardInputMode *)inputMode
-{
-	%log;
-	notEmoji = 4;
-	%orig;
-	notEmoji = 0;
+- (void)setLanguageAwareInputModeLastUsed: (UIKeyboardInputMode *)inputMode {
+    notEmoji = 4;
+    %orig;
+    notEmoji = 0;
 }
 
 %end
 
 %hook UIKeyboardInputModeController
 
-- (void)setCurrentInputModeInPreference:(UIKeyboardInputMode *)inputMode
-{
-	%log;
-	NSString *identifier = inputMode.identifier;
-	if (identifier)
-		[UIKeyboardPreferencesController.sharedPreferencesController setValue:identifier forKey:12];
+- (void)setCurrentInputModeInPreference: (UIKeyboardInputMode *)inputMode {
+    NSString *identifier = inputMode.identifier;
+    if (identifier)
+        [UIKeyboardPreferencesController.sharedPreferencesController setValue:identifier forKey:12];
 }
 
 %end
@@ -67,63 +61,54 @@ MSHook(NSString *, TIInputModeGetNormalizedIdentifier, UIKeyboardInputMode *inpu
 
 %hook UIInputSwitcherView
 
-- (void)setInputMode:(NSString *)inputMode
-{
-	%log;
-	notEmoji = 4;
-	%orig;
-	notEmoji = 0;
+- (void)setInputMode: (NSString *)inputMode {
+    notEmoji = 4;
+    %orig;
+    notEmoji = 0;
 }
 
 %end
 
 %hook UIKeyboardInputModeController
 
-- (void)updateLastUsedInputMode:(UIKeyboardInputMode *)inputMode
-{
-	%log;
-	if ([inputMode.normalizedIdentifier isEqualToString:@"emoji"]) {
-		inputMode.normalizedIdentifier = @"notemoji";
-		%orig(inputMode);
-		inputMode.normalizedIdentifier = @"emoji";
-		return;
-	}
-	%orig;
+- (void)updateLastUsedInputMode: (UIKeyboardInputMode *)inputMode {
+    if ([inputMode.normalizedIdentifier isEqualToString:@"emoji"]) {
+        inputMode.normalizedIdentifier = @"notemoji";
+        %orig(inputMode);
+        inputMode.normalizedIdentifier = @"emoji";
+        return;
+    }
+    %orig;
 }
 
 %end
 
 %hook UIKeyboardLayoutStar
 
-- (BOOL)keyplaneContainsEmojiKey
-{
-	return notEmoji >= 2 ? NO : %orig;
+- (BOOL)keyplaneContainsEmojiKey {
+    return notEmoji >= 2 ? NO : %orig;
 }
 
 %end
 
 %hook UIKeyboardImpl
 
-- (void)setInputModeToNextInPreferredListWithExecutionContext:(id)arg1
-{
-	%log;
-	notEmoji = 4;
-	%orig;
-	notEmoji = 0;
+- (void)setInputModeToNextInPreferredListWithExecutionContext: (id)arg1 {
+    notEmoji = 4;
+    %orig;
+    notEmoji = 0;
 }
 
 %end
 
 %end
 
-%ctor
-{
-	MSHookFunction(TIInputModeGetNormalizedIdentifier, MSHake(TIInputModeGetNormalizedIdentifier));
-	%init;
-	if (isiOS8Up) {
-		%init(iOS8);
-		if (isiOS9Up) {
-			%init(iOS9);
-		}
-	}
+%ctor {
+    %init;
+    if (isiOS8Up) {
+        %init(iOS8);
+        if (isiOS9Up) {
+            %init(iOS9);
+        }
+    }
 }
